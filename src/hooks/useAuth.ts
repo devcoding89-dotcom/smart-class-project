@@ -150,7 +150,7 @@ export function useAuth() {
       if (error) throw error;
 
       if (data.user) {
-        const approvalStatus = metadata.role === 'student' ? 'approved' : 'pending';
+        const approvalStatus = 'approved';
         const { error: profileError } = await supabase.from('profiles').insert({
           id: data.user.id,
           full_name: metadata.full_name,

@@ -65,23 +65,10 @@ export default function RegisterPage() {
   };
 
   if (success) {
-    // After successful sign‑up, immediately start Google OAuth flow and redirect
-    if (true) {
-      // Trigger Google sign‑in
-      supabase
-        .auth
-        .signInWithOAuth({ provider: 'google' })
-        .then(() => {
-          // After OAuth flow completes (or user cancels), navigate to the appropriate dashboard
-          navigate('/');
-        })
-        .catch((err) => {
-          console.error('Google sign‑in error:', err);
-          setError('Unable to sign in with Google. Please try manually.');
-        });
-      // Render nothing while the OAuth redirect is in progress
-      return null;
-    }
+    // Directly navigate to the appropriate dashboard after sign‑up
+    const target = roleRoutes[selectedRole as UserRole] || '/student/dashboard';
+    navigate(target);
+    return null;
   }
 
   return (
