@@ -5,6 +5,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { UserRole, Department, Level } from '../../types';
 
+const roleRoutes: Record<UserRole, string> = {
+  student: '/student/dashboard',
+  class_rep: '/class-rep/dashboard',
+  teacher: '/teacher/dashboard',
+  dept_admin: '/dept-admin/dashboard',
+  super_admin: '/super-admin/dashboard',
+};
+
 const roles: { value: UserRole; label: string; desc: string; color: string }[] = [
   { value: 'student', label: 'Student', desc: 'Access timetable, scan QR attendance, use AI tutor', color: 'border-blue-500/40 bg-blue-500/5 hover:bg-blue-500/10' },
   { value: 'class_rep', label: 'Class Rep', desc: 'Generate QR codes, send alerts, manage attendance', color: 'border-teal-500/40 bg-teal-500/5 hover:bg-teal-500/10' },
@@ -56,7 +64,14 @@ export default function RegisterPage() {
         department_id: form.department_id || undefined,
         level_id: form.level_id || undefined,
       });
-      setSuccess(true);
+      if (selectedRole === 'super_admin') {
+        // Show pending approval message
+        setSuccess(true);
+      } else {
+        // Immediate navigation for other roles
+        const target = roleRoutes[selectedRole] || '/student/dashboard';
+        navigate(target);
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
     } finally {
@@ -74,13 +89,14 @@ export default function RegisterPage() {
     }
   };
 
-  if (success) {
+  // Show pending approval message for super_admin after signup
+  if (success && selectedRole === 'super_admin') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-6">
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center max-w-sm">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Registration Successful</h2>
-          <p className="text-blue-300/60 mb-6">Please check your email to verify your account before signing in.</p>
+          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Registration Pending</h2>
+          <p className="text-blue-300/60 mb-6">Your Super Admin account requires approval by an existing administrator.</p>
           <Link to="/login" className="btn-primary w-full block text-center">Back to Sign In</Link>
         </div>
       </div>
@@ -139,15 +155,15 @@ export default function RegisterPage() {
               >
                 Continue
               </button>
-              {selectedRole && selectedRole !== 'super_admin' && (
-                <button
-                  type="button"
-                  onClick={handleGoogleContinue}
-                  className="btn-secondary w-full justify-center mt-3"
-                >
-                  Continue with Google
-                </button>
-              )}
+              {selectedRole !== 'super_admin' && (
+  <button
+    type="button"
+    onClick={handleGoogleContinue}
+    className="btn-secondary w-full justify-center mt-3"
+  >
+    Continue with Google
+  </button>
+)}
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
