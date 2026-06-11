@@ -65,26 +65,23 @@ export default function RegisterPage() {
   };
 
   if (success) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-6">
-        <div className="w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-10 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="p-3.5 bg-green-500/20 rounded-full">
-              <CheckCircle className="w-8 h-8 text-green-400" />
-            </div>
-          </div>
-          <h2 className="text-xl font-bold text-white mb-2">Account Created!</h2>
-          <p className="text-blue-200/70 text-sm mb-6">
-            {selectedRole === 'student'
-              ? 'Your student account is ready. You can sign in now.'
-              : 'Your account is pending approval from an administrator. You will be notified once approved.'}
-          </p>
-          <button onClick={() => navigate('/login')} className="btn-primary w-full justify-center">
-            Go to Sign In
-          </button>
-        </div>
-      </div>
-    );
+    // After successful sign‑up, immediately start Google OAuth flow and redirect
+    if (true) {
+      // Trigger Google sign‑in
+      supabase
+        .auth
+        .signInWithOAuth({ provider: 'google' })
+        .then(() => {
+          // After OAuth flow completes (or user cancels), navigate to the appropriate dashboard
+          navigate('/');
+        })
+        .catch((err) => {
+          console.error('Google sign‑in error:', err);
+          setError('Unable to sign in with Google. Please try manually.');
+        });
+      // Render nothing while the OAuth redirect is in progress
+      return null;
+    }
   }
 
   return (
