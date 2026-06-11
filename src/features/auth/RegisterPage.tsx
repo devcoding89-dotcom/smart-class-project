@@ -64,11 +64,27 @@ export default function RegisterPage() {
     }
   };
 
+  // Google OAuth continue
+  const handleGoogleContinue = async () => {
+    try {
+      await supabase.auth.signInWithOAuth({ provider: 'google' });
+    } catch (err) {
+      console.error('Google sign‑in error:', err);
+      setError('Google sign‑in failed.');
+    }
+  };
+
   if (success) {
-    // Directly navigate to the appropriate dashboard after sign‑up
-    const target = roleRoutes[selectedRole as UserRole] || '/student/dashboard';
-    navigate(target);
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-6">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center max-w-sm">
+          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">Registration Successful</h2>
+          <p className="text-blue-300/60 mb-6">Please check your email to verify your account before signing in.</p>
+          <Link to="/login" className="btn-primary w-full block text-center">Back to Sign In</Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -123,6 +139,15 @@ export default function RegisterPage() {
               >
                 Continue
               </button>
+              {selectedRole && selectedRole !== 'super_admin' && (
+                <button
+                  type="button"
+                  onClick={handleGoogleContinue}
+                  className="btn-secondary w-full justify-center mt-3"
+                >
+                  Continue with Google
+                </button>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
