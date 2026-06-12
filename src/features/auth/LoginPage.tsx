@@ -47,7 +47,28 @@ export default function LoginPage() {
     try {
       const { user } = await signIn(email, password);
       if (user) {
-        const { data: profile } = await supabase.from('profiles').select('role, approval_status').eq('id', user.id).maybeSingle();
+        let { data: profile } = await supabase.from('profiles').select('role, approval_status').eq('id', user.id).maybeSingle();
+        
+        if (!profile) {
+          // Auto-heal missing profile
+          const role = user.user_metadata?.role || 'student';
+          const full_name = user.user_metadata?.full_name || 'New User';
+          const approval_status = role === 'super_admin' ? 'approved' : 'pending';
+          const phone = user.user_metadata?.phone || '';
+
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert({ id: user.id, full_name, role, approval_status, phone })
+            .select('role, approval_status')
+            .maybeSingle();
+
+          if (createError) {
+            console.error('Error auto-creating missing profile on login:', createError);
+          } else if (newProfile) {
+            profile = newProfile;
+          }
+        }
+
         if (profile?.approval_status === 'pending') {
           navigate('/approval-pending');
           return;

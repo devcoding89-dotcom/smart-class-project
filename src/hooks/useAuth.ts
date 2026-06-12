@@ -44,13 +44,44 @@ export function useAuth() {
     };
   });
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (user: User) => {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('id', user.id)
       .maybeSingle();
-    if (error) console.error('Profile fetch error:', error);
+    if (error) {
+      console.error('Profile fetch error:', error);
+      return null;
+    }
+
+    // Auto-heal missing profiles
+    if (!data) {
+      console.log('Profile missing in DB, auto-creating from user metadata...');
+      const role = user.user_metadata?.role || 'student';
+      const full_name = user.user_metadata?.full_name || 'New User';
+      const approval_status = role === 'super_admin' ? 'approved' : 'pending';
+      const phone = user.user_metadata?.phone || '';
+
+      const { data: newProfile, error: createError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          full_name,
+          role,
+          approval_status,
+          phone,
+        })
+        .select()
+        .maybeSingle();
+
+      if (createError) {
+        console.error('Error auto-creating missing profile:', createError);
+        return null;
+      }
+      return newProfile as Profile;
+    }
+
     return data as Profile | null;
   }, []);
 
@@ -77,7 +108,7 @@ export function useAuth() {
         return;
       }
       if (session?.user) {
-        const profile = await fetchProfile(session.user.id);
+        const profile = await fetchProfile(session.user);
         setState({
           user: session.user,
           profile,
@@ -103,7 +134,7 @@ export function useAuth() {
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         (async () => {
           if (session?.user) {
-            const profile = await fetchProfile(session.user.id);
+            const profile = await fetchProfile(session.user);
             setState({
               user: session.user,
               profile,
@@ -192,7 +223,7 @@ export function useAuth() {
 
   const refreshProfile = async () => {
     if (state.user) {
-      const profile = await fetchProfile(state.user.id);
+      const profile = await fetchProfile(state.user);
       setState((s) => ({ ...s, profile }));
     }
   };
