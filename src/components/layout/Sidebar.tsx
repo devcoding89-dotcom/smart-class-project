@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   GraduationCap, LayoutDashboard, BookOpen, Calendar,
   Bell, BarChart3, LogOut, QrCode, Brain,
-  ChevronRight, FileText, UserCheck, X
+  ChevronRight, FileText, UserCheck, X, Users
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../ui/Avatar';
@@ -36,8 +36,13 @@ const navByRole: Record<UserRole, NavItem[]> = {
     { to: '/teacher/timetable', icon: <Calendar className="w-4 h-4" />, label: 'Timetable' },
     { to: '/teacher/alerts', icon: <Bell className="w-4 h-4" />, label: 'Alerts' },
   ],
-  dept_admin: [],
-  super_admin: [],
+  dept_admin: [
+    { to: '/dept-admin/dashboard', icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard' },
+    { to: '/dept-admin/users', icon: <Users className="w-4 h-4" />, label: 'Users' },
+  ],
+  super_admin: [
+    { to: '/super-admin/dashboard', icon: <LayoutDashboard className="w-4 h-4" />, label: 'Dashboard' },
+  ],
 };
 
 const roleLabels: Record<UserRole, { label: string; color: string }> = {

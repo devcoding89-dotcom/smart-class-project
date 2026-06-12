@@ -22,16 +22,24 @@ import StudentAIAssistantPage from './features/student/StudentAIAssistantPage';
 // Class Rep
 import ClassRepDashboard from './features/class-rep/ClassRepDashboard';
 
+// Super Admin
+import SuperAdminDashboard from './features/super-admin/SuperAdminDashboard';
+
+// Dept Admin
+import DeptAdminDashboard from './features/dept-admin/DeptAdminDashboard';
+import DeptAdminUsersPage from './features/dept-admin/DeptAdminUsersPage';
+
 // Shared
 import TimetablePage from './features/shared/TimetablePage';
 import AlertsPage from './features/shared/AlertsPage';
+import LandingPage from './features/landing/LandingPage';
 
 const roleRoutes: Record<UserRole, string> = {
   student: '/student/dashboard',
   class_rep: '/class-rep/dashboard',
   teacher: '/teacher/dashboard',
-  dept_admin: '/login',
-  super_admin: '/login',
+  dept_admin: '/dept-admin/dashboard',
+  super_admin: '/super-admin/dashboard',
 };
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -56,32 +64,12 @@ function RoleGuard({ roles, children }: { roles: UserRole[]; children: React.Rea
 
   if (isLoading) return <PageLoader />;
 
-  // Block access to admin routes
-  if (profile && (profile.role === 'dept_admin' || profile.role === 'super_admin')) {
-    return <Navigate to={roleRoutes[profile.role]} replace />;
-  }
-
   if (!profile || !roles.includes(profile.role)) {
     return <Navigate to={profile ? roleRoutes[profile.role] : '/login'} replace />;
   }
   return <>{children}</>;
 }
 
-function RedirectToDashboard() {
-  const { profile, isLoading, isAuthenticated } = useAuth();
-
-  if (isLoading) return <PageLoader />;
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (profile?.approval_status === 'pending') return <Navigate to="/approval-pending" replace />;
-
-  // Redirect admin users to login (hide access)
-  if (profile && (profile.role === 'dept_admin' || profile.role === 'super_admin')) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (profile) return <Navigate to={roleRoutes[profile.role]} replace />;
-  return <Navigate to="/login" replace />;
-}
 
 export default function App() {
   return (
@@ -91,7 +79,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/approval-pending" element={<ApprovalPendingPage />} />
-        <Route path="/" element={<RedirectToDashboard />} />
+        <Route path="/" element={<LandingPage />} />
 
         {/* Student */}
         <Route path="/student/*" element={
@@ -138,6 +126,29 @@ export default function App() {
           </AuthGuard>
         } />
 
+
+        {/* Super Admin */}
+        <Route path="/super-admin/*" element={
+          <AuthGuard>
+            <RoleGuard roles={['super_admin']}>
+              <Routes>
+                <Route path="dashboard" element={<SuperAdminDashboard />} />
+              </Routes>
+            </RoleGuard>
+          </AuthGuard>
+        } />
+
+        {/* Dept Admin */}
+        <Route path="/dept-admin/*" element={
+          <AuthGuard>
+            <RoleGuard roles={['dept_admin']}>
+              <Routes>
+                <Route path="dashboard" element={<DeptAdminDashboard />} />
+                <Route path="users" element={<DeptAdminUsersPage />} />
+              </Routes>
+            </RoleGuard>
+          </AuthGuard>
+        } />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

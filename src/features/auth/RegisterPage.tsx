@@ -34,7 +34,6 @@ export default function RegisterPage() {
   const [levels, setLevels] = useState<Level[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     supabase.from('departments').select('*').order('name').then(({ data }) => {
@@ -64,13 +63,12 @@ export default function RegisterPage() {
         department_id: form.department_id || undefined,
         level_id: form.level_id || undefined,
       });
+      // Super admin is auto-approved — go straight to dashboard.
+      // All other roles are pending and must wait for super admin approval.
       if (selectedRole === 'super_admin') {
-        // Show pending approval message
-        setSuccess(true);
+        navigate(roleRoutes[selectedRole]);
       } else {
-        // Immediate navigation for other roles
-        const target = roleRoutes[selectedRole] || '/student/dashboard';
-        navigate(target);
+        navigate('/approval-pending');
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
@@ -82,26 +80,16 @@ export default function RegisterPage() {
   // Google OAuth continue
   const handleGoogleContinue = async () => {
     try {
-      await supabase.auth.signInWithOAuth({ provider: 'google' });
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: window.location.origin },
+      });
     } catch (err) {
       console.error('Google sign‑in error:', err);
       setError('Google sign‑in failed.');
     }
   };
 
-  // Show pending approval message for super_admin after signup
-  if (success && selectedRole === 'super_admin') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-6">
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 text-center max-w-sm">
-          <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">Registration Pending</h2>
-          <p className="text-blue-300/60 mb-6">Your Super Admin account requires approval by an existing administrator.</p>
-          <Link to="/login" className="btn-primary w-full block text-center">Back to Sign In</Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-6">
