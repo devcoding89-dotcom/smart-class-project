@@ -56,6 +56,15 @@ export default function RegisterPage() {
     setError('');
     setIsLoading(true);
     try {
+      // 1. Check if phone is already registered
+      const { data: phoneExists, error: phoneError } = await supabase.rpc('check_phone_exists', { phone_val: form.phone });
+      if (phoneError) {
+        throw new Error(phoneError.message);
+      }
+      if (phoneExists) {
+        throw new Error('This phone number is already registered to another account.');
+      }
+
       await signUp(form.email, form.password, {
         full_name: form.full_name,
         role: selectedRole,
@@ -222,7 +231,7 @@ export default function RegisterPage() {
                   <label className="block text-xs font-medium text-blue-200/80 mb-1.5">Phone Number</label>
                   <div className="relative">
                     <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-400/60" />
-                    <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    <input type="tel" required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       placeholder="+234 800 000 0000" className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-blue-300/30 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
                   </div>
                 </div>

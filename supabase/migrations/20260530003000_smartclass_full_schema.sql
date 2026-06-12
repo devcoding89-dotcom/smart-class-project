@@ -11,6 +11,7 @@ DROP FUNCTION IF EXISTS public.is_role(text) CASCADE;
 DROP FUNCTION IF EXISTS public.bootstrap_first_super_admin() CASCADE;
 DROP FUNCTION IF EXISTS public.match_document_chunks(vector, int, uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.check_phone_exists(text) CASCADE;
 
 DROP TABLE IF EXISTS public.ai_messages CASCADE;
 DROP TABLE IF EXISTS public.ai_conversations CASCADE;
@@ -50,6 +51,26 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+-- Check if phone number is already registered
+CREATE OR REPLACE FUNCTION public.check_phone_exists(phone_val text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF phone_val IS NULL OR phone_val = '' THEN
+    RETURN FALSE;
+  END IF;
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles WHERE phone = phone_val
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.check_phone_exists(text) TO anon, authenticated;
+
 
 -- ===== Core Tables =====
 
@@ -97,6 +118,8 @@ ALTER TABLE public.levels
 
 CREATE INDEX IF NOT EXISTS profiles_department_idx on public.profiles(department_id);
 CREATE INDEX IF NOT EXISTS profiles_level_idx on public.profiles(level_id);
+CREATE UNIQUE INDEX IF NOT EXISTS profiles_phone_unique_idx ON public.profiles(phone) WHERE (phone IS NOT NULL AND phone != '');
+
 
 -- 4. Courses
 CREATE TABLE public.courses (
@@ -723,7 +746,7 @@ INSERT INTO public.profiles (id, full_name, role, approval_status, department_id
     'approved',
     NULL,
     NULL,
-    '',
+    '+2348000000001',
     now(),
     now()
   ),
@@ -734,7 +757,7 @@ INSERT INTO public.profiles (id, full_name, role, approval_status, department_id
     'approved',
     'c0a80101-0000-0000-0000-000000000001',
     NULL,
-    '',
+    '+2348000000002',
     now(),
     now()
   ),
@@ -745,7 +768,7 @@ INSERT INTO public.profiles (id, full_name, role, approval_status, department_id
     'approved',
     'c0a80101-0000-0000-0000-000000000001',
     'c0a80102-0000-0000-0000-000000000001',
-    '',
+    '+2348000000003',
     now(),
     now()
   )
@@ -755,6 +778,7 @@ ON CONFLICT (id) DO UPDATE SET
   approval_status = EXCLUDED.approval_status,
   department_id  = EXCLUDED.department_id,
   level_id       = EXCLUDED.level_id,
+  phone          = EXCLUDED.phone,
   updated_at     = now();
 
 -- Seed Courses

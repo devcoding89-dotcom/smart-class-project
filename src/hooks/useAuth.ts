@@ -145,12 +145,20 @@ export function useAuth() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { role: metadata.role, full_name: metadata.full_name } },
+        options: {
+          data: {
+            role: metadata.role,
+            full_name: metadata.full_name,
+            phone: metadata.phone,
+            department_id: metadata.department_id,
+            level_id: metadata.level_id,
+          },
+        },
       });
       if (error) throw error;
 
       if (data.user) {
-        const approvalStatus = 'approved';
+        const approvalStatus = metadata.role === 'super_admin' ? 'approved' : 'pending';
         const { error: profileError } = await supabase.from('profiles').insert({
           id: data.user.id,
           full_name: metadata.full_name,
