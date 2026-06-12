@@ -8,7 +8,6 @@ import Modal from '../../components/ui/Modal';
 import { StatCardSkeleton } from '../../components/ui/LoadingSkeleton';
 import EmptyState from '../../components/ui/EmptyState';
 import { supabase } from '../../config/supabase';
-import { useAuth } from '../../hooks/useAuth';
 import { useRealtimeTable } from '../../hooks/useRealtime';
 import { AttendanceRecord } from '../../types';
 
@@ -61,7 +60,6 @@ function QRDisplay({ token, expiresAt }: { token: string; expiresAt: Date }) {
 }
 
 export default function ClassRepDashboard() {
-  const { profile } = useAuth();
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSessionActive, setIsSessionActive] = useState(false);

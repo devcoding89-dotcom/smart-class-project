@@ -1,9 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
 import {
-  GraduationCap, LayoutDashboard, Users, BookOpen, Calendar,
-  Bell, BarChart3, Settings, LogOut, QrCode, Brain,
-  Building2, Shield, ChevronRight, FileText, UserCheck, X, Menu
+  GraduationCap, LayoutDashboard, BookOpen, Calendar,
+  Bell, BarChart3, LogOut, QrCode, Brain,
+  ChevronRight, FileText, UserCheck, X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../ui/Avatar';

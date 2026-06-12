@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, BookOpen, Sparkles } from 'lucide-react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import EmptyState from '../../components/ui/EmptyState';
 
 interface Message {
   id: string;

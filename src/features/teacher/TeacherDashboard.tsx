@@ -28,7 +28,7 @@ export default function TeacherDashboard() {
   const fetchData = useCallback(async () => {
     if (!profile?.id) return;
 
-    const [coursesRes, classesRes, attendanceRes] = await Promise.all([
+    const [coursesRes, classesRes, _attendanceRes] = await Promise.all([
       supabase.from('courses').select('*, levels(name, year)').eq('teacher_id', profile.id).order('code'),
       supabase.from('classes').select('id, course_id, courses!inner(teacher_id)').eq('courses.teacher_id', profile.id),
       supabase.from('attendance').select('*, profiles(full_name, avatar_url), sessions(start_time, courses(name, code))')

@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Bell, Search, Menu, X } from 'lucide-react';
+import { Bell, Search, Menu } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../../hooks/useAuth';
 import Avatar from '../ui/Avatar';

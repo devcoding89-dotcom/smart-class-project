@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { User, Session, AuthError } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import { Profile, UserRole } from '../types';
 
@@ -100,7 +100,7 @@ export function useAuth() {
 
     // Only subscribe to auth changes if not in demo mode
     if (!getDemoUser()) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         (async () => {
           if (session?.user) {
             const profile = await fetchProfile(session.user.id);

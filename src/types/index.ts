@@ -103,6 +103,7 @@ export interface AttendanceRecord {
   device_fingerprint: string;
   profiles?: Profile;
   sessions?: Session;
+  courses?: Course;
 }
 
 export interface Alert {

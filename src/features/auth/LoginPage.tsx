@@ -15,7 +15,7 @@ const roleRoutes: Record<UserRole, string> = {
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, connectionError } = useAuth();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -67,6 +67,26 @@ export default function LoginPage() {
       } else {
         setError('Invalid email or password');
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Google OAuth continue
+  const handleGoogleContinue = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const { error: err } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (err) throw err;
+    } catch (err: unknown) {
+      console.error('Google sign-in error:', err);
+      setError(err instanceof Error ? err.message : 'Google sign-in failed.');
     } finally {
       setIsLoading(false);
     }
@@ -226,6 +246,39 @@ export default function LoginPage() {
                 ) : 'Sign In'}
               </button>
             </form>
+
+            <div className="flex items-center gap-3 my-5">
+              <div className="h-px flex-1 bg-white/10" />
+              <span className="text-xs text-blue-300/40 uppercase tracking-wider">or</span>
+              <div className="h-px flex-1 bg-white/10" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleContinue}
+              disabled={isLoading}
+              className="w-full py-2.5 bg-white/5 hover:bg-white/10 active:bg-white/15 text-white text-sm font-semibold rounded-xl border border-white/10 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-transparent flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path
+                  fill="#EA4335"
+                  d="M5.2662,9.7645 C6.1988,6.9386 8.8588,4.9091 12,4.9091 C13.6909,4.9091 15.2182,5.5091 16.4182,6.4909 L19.9091,3 C17.7818,1.1455 15.0545,0 12,0 C7.3309,0 3.3273,2.6909 1.3909,6.6273 L5.2662,9.7645 Z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M16.0407,18.013 C14.9509,18.7182 13.56,19.0909 12,19.0909 C8.8588,19.0909 6.1988,17.0614 5.2662,14.2355 L1.3909,17.3727 C3.3273,21.3091 7.3309,24 12,24 C14.9564,24 17.7327,22.9527 19.8327,21.1636 L16.0407,18.013 Z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M23.49,12.2727 C23.49,11.49 23.4191,10.7836 23.3,10.0909 L12,10.0909 L12,14.7273 L18.4473,14.7273 C18.1745,16.2055 17.3127,17.2745 16.0407,18.013 L19.8327,21.1636 C22.0473,19.1182 23.49,16.0364 23.49,12.2727 Z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.2662,9.7645 C5.0182,10.5109 4.8818,11.3073 4.8818,12.1364 C4.8818,12.9655 5.0182,13.7618 5.2662,14.2355 L1.3909,17.3727 C0.5,15.5891 0,13.62 0,11.5364 C0,9.4527 0.5,7.4836 1.3909,5.7 L5.2662,9.7645 Z"
+                />
+              </svg>
+              <span>Continue with Google</span>
+            </button>
 
             {/* Demo Mode */}
             {isOnline === false && (
