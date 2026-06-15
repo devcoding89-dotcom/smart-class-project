@@ -12,10 +12,12 @@ DROP FUNCTION IF EXISTS public.bootstrap_first_super_admin() CASCADE;
 DROP FUNCTION IF EXISTS public.match_document_chunks(vector, int, uuid) CASCADE;
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 DROP FUNCTION IF EXISTS public.check_phone_exists(text) CASCADE;
+DROP FUNCTION IF EXISTS public.check_device_association(text, uuid) CASCADE;
 
 DROP TABLE IF EXISTS public.ai_messages CASCADE;
 DROP TABLE IF EXISTS public.ai_conversations CASCADE;
 DROP TABLE IF EXISTS public.document_chunks CASCADE;
+DROP TABLE IF EXISTS public.system_settings CASCADE;
 DROP TABLE IF EXISTS public.materials CASCADE;
 DROP TABLE IF EXISTS public.announcements CASCADE;
 DROP TABLE IF EXISTS public.alerts CASCADE;
@@ -70,6 +72,46 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.check_phone_exists(text) TO anon, authenticated;
+
+-- Check if a device fingerprint is already linked to another account
+CREATE OR REPLACE FUNCTION public.check_device_association(fingerprint_val text, user_id_val uuid DEFAULT null)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _linked_user_id uuid;
+  _linked_email text;
+BEGIN
+  IF fingerprint_val IS NULL OR fingerprint_val = '' THEN
+    RETURN json_build_object('associated', false);
+  END IF;
+
+  -- Find if another user is linked to this fingerprint
+  SELECT p.id, u.email INTO _linked_user_id, _linked_email
+  FROM public.profiles p
+  JOIN auth.users u ON p.id = u.id
+  WHERE p.device_fingerprint = fingerprint_val;
+
+  IF _linked_user_id IS NOT NULL THEN
+    IF user_id_val IS NOT NULL AND _linked_user_id = user_id_val THEN
+      RETURN json_build_object('associated', true, 'is_self', true);
+    ELSE
+      -- Mask email for privacy
+      RETURN json_build_object(
+        'associated', true,
+        'is_self', false,
+        'linked_email', regexp_replace(_linked_email, '(?<=.{2}).(?=[^@]*?.@)', '*', 'g')
+      );
+    END IF;
+  END IF;
+
+  RETURN json_build_object('associated', false);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.check_device_association(text, uuid) TO anon, authenticated;
 
 
 -- ===== Core Tables =====
@@ -349,6 +391,16 @@ alter table public.ai_messages enable row level security;
 
 CREATE INDEX IF NOT EXISTS ai_messages_conversation_idx on public.ai_messages(conversation_id);
 
+-- 15. System Settings
+CREATE TABLE public.system_settings (
+  key text primary key,
+  value text not null,
+  description text,
+  updated_at timestamptz not null default now()
+);
+alter table public.system_settings enable row level security;
+CREATE INDEX IF NOT EXISTS system_settings_key_idx on public.system_settings(key);
+
 -- ===== Role Checking Helpers & triggers (Defined AFTER tables exist) =====
 
 CREATE OR REPLACE FUNCTION public.get_user_role(user_id uuid)
@@ -436,6 +488,14 @@ CREATE POLICY "departments readable by authenticated" on public.departments
 
 CREATE POLICY "departments writeable by super_admin" on public.departments
   for all to authenticated using (public.is_role('super_admin'));
+
+-- System Settings
+CREATE POLICY "system_settings readable by authenticated" on public.system_settings
+  for select to authenticated using (true);
+
+CREATE POLICY "system_settings writeable by super_admin" on public.system_settings
+  for all to authenticated using (public.is_role('super_admin'));
+
 
 -- Levels
 CREATE POLICY "levels readable by authenticated" on public.levels
@@ -780,6 +840,20 @@ ON CONFLICT (id) DO UPDATE SET
   level_id       = EXCLUDED.level_id,
   phone          = EXCLUDED.phone,
   updated_at     = now();
+
+-- Seed System Settings
+INSERT INTO public.system_settings (key, value, description) VALUES
+  ('qr_token_expiry', '60', 'QR Token Expiry in seconds'),
+  ('gps_geofence_radius', '100', 'GPS Geofence Radius in meters'),
+  ('ai_chat_limit', '30', 'AI Chat Limit in requests per hour'),
+  ('late_grace_period', '10', 'Late Grace Period in minutes'),
+  ('sms_alert_delay', '30', 'SMS Alert Delay in seconds'),
+  ('attendance_threshold', '70', 'Attendance Threshold in percentage')
+ON CONFLICT (key) DO UPDATE SET
+  value = EXCLUDED.value,
+  description = EXCLUDED.description,
+  updated_at = now();
+
 
 -- Seed Courses
 INSERT INTO public.courses (id, level_id, department_id, code, name, teacher_id, credit_units) VALUES

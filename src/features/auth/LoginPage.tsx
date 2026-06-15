@@ -4,6 +4,7 @@ import { GraduationCap, Mail, Lock, Eye, EyeOff, AlertCircle, Wifi, WifiOff } fr
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { UserRole } from '../../types';
+import { getDeviceFingerprint } from '../../utils/fingerprint';
 
 const roleRoutes: Record<UserRole, string> = {
   student: '/student/dashboard',
@@ -47,7 +48,7 @@ export default function LoginPage() {
     try {
       const { user } = await signIn(email, password);
       if (user) {
-        let { data: profile } = await supabase.from('profiles').select('role, approval_status').eq('id', user.id).maybeSingle();
+        let { data: profile } = await supabase.from('profiles').select('role, approval_status, device_fingerprint').eq('id', user.id).maybeSingle();
         
         if (!profile) {
           // Auto-heal missing profile
@@ -59,7 +60,7 @@ export default function LoginPage() {
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
             .insert({ id: user.id, full_name, role, approval_status, phone })
-            .select('role, approval_status')
+            .select('role, approval_status, device_fingerprint')
             .maybeSingle();
 
           if (createError) {
@@ -67,6 +68,19 @@ export default function LoginPage() {
           } else if (newProfile) {
             profile = newProfile;
           }
+        }
+
+        // Device fingerprint check — one device = one account
+        const fingerprint = await getDeviceFingerprint();
+        if (profile?.device_fingerprint && profile.device_fingerprint !== fingerprint) {
+          // Device doesn’t match the registered device
+          await supabase.auth.signOut();
+          setError('This account is registered on a different device. Only one device per account is allowed.');
+          return;
+        }
+        // Store/update fingerprint if not set yet
+        if (!profile?.device_fingerprint) {
+          await supabase.from('profiles').update({ device_fingerprint: fingerprint }).eq('id', user.id);
         }
 
         if (profile?.approval_status === 'pending') {

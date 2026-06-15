@@ -4,6 +4,7 @@ import { GraduationCap, Mail, Lock, User, Phone, AlertCircle, ChevronLeft } from
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../config/supabase';
 import { UserRole, Department, Level } from '../../types';
+import { getDeviceFingerprint } from '../../utils/fingerprint';
 
 const roleRoutes: Record<UserRole, string> = {
   student: '/student/dashboard',
@@ -65,12 +66,26 @@ export default function RegisterPage() {
         throw new Error('This phone number is already registered to another account.');
       }
 
+      // 2. Check device fingerprint — one device = one account
+      const fingerprint = await getDeviceFingerprint();
+      const { data: deviceCheck, error: deviceError } = await supabase.rpc('check_device_association', {
+        fingerprint_val: fingerprint,
+      });
+      if (deviceError) {
+        console.warn('Device check failed (non-blocking):', deviceError.message);
+      } else if (deviceCheck?.associated && !deviceCheck?.is_self) {
+        throw new Error(
+          `This device is already registered to another account (${deviceCheck.linked_email}). Only one account per device is allowed.`
+        );
+      }
+
       await signUp(form.email, form.password, {
         full_name: form.full_name,
         role: selectedRole,
         phone: form.phone,
         department_id: form.department_id || undefined,
         level_id: form.level_id || undefined,
+        device_fingerprint: fingerprint,
       });
       // Super admin is auto-approved — go straight to dashboard.
       // All other roles are pending and must wait for super admin approval.
